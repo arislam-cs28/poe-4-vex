@@ -9,4 +9,4 @@ counter = 0
 
 while(counter < 10):
     print("Time: " + str(counter))
-    counter += 1
+    counter += 1 # Incrementing by 2
