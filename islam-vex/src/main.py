@@ -111,7 +111,7 @@ def driveStraight(distance, setpoint, motorVelocity):
 
     inertial_1.reset_rotation() # Resetting the rotation value to 0 before taking action
 
-    kP = 0.00   # Proportional constant for driving straight
+    kP = 0.60   # Proportional constant for driving straight
                 # Used calculate the correction to maintain course
                 # If too small, correction will occur too slowly
                 # If too large, over-correction will occur
@@ -184,9 +184,13 @@ def main():
     The main() function is the program that is executed by the Brain
     """
 
-    bump()                  # Call the bump() function to begin program execution
-    inertialCalibration()   # Calibrate the inertial sensor
+    bump()                          # Call the bump() function to begin program execution
+    leftMotor.set_stopping(BRAKE)   # This mode will help reduce the "lurch" effect
+    rightMotor.set_stopping(BRAKE) 
+    inertialCalibration()           # Calibrate the inertial sensor
 
-    driveStraight(90, 0, 50) # Call driveStraight with the necessary distance
+    driveStraight(87, 0, 50)        # Call driveStraight with the necessary distance
+    wait(2, SECONDS)
+    driveStraight(87, 0, -50)
 #-----------------------------------------------------------------------------
 main()
