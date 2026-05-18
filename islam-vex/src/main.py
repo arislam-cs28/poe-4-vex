@@ -84,14 +84,14 @@ def driveStraightData(e):
     2. Parameter: e is equal to our error value (setpoint - rotation)
     """
 
-    brain.screen.set_cursor(1,1) # Setting cursor at location 1, 1
-    brain.screen.print("Position: " + str(leftMotor.position())) # Returning current encoder count
+    brain.screen.set_cursor(1,1)                                    # Setting cursor at location 1, 1
+    brain.screen.print("Position: " + str(leftMotor.position()))    # Returning current encoder count
 
-    brain.screen.set_cursor(1,1) # Setting cursor at location 1, 1
-    brain.screen.print("Rotation: " + str(inertial_1.rotation())) # Returning current rotation count
+    brain.screen.set_cursor(2,1)                                    # Setting cursor at location 1, 1
+    brain.screen.print("Rotation: " + str(inertial_1.rotation()))   # Returning current rotation count
 
-    brain.screen.set_cursor(1,1) # Setting cursor at location 1, 1
-    brain.screen.print("Error: " + str(e)) # Returning current error
+    brain.screen.set_cursor(3,1)                                    # Setting cursor at location 1, 1
+    brain.screen.print("Error: " + str(e))                          # Returning current error
 
 def stopMotors():
     """
@@ -110,6 +110,11 @@ def driveStraight(distance, setpoint, motorVelocity):
     """
 
     inertial_1.reset_rotation() # Resetting the rotation value to 0 before taking action
+
+    # Setting the stopping mode for the motors
+    leftMotor.set_stopping(COAST)
+    rightMotor.set_stopping(COAST)
+
 
     kP = 0.60   # Proportional constant for driving straight
                 # Used calculate the correction to maintain course
@@ -175,6 +180,95 @@ def driveStraight(distance, setpoint, motorVelocity):
 
         stopMotors() # Stop both motors once desire distance is reached
 
+def turnData(turnError, derivative):
+    brain.screen.set_cursor(1,1) # Setting cursor at location 1, 1
+    brain.screen.print("Heading: " + str(inertial_1.heading())) # Returning heading
+
+    brain.screen.set_cursor(2,1) # Setting cursor at location 2, 1
+    brain.screen.print("Error: " + str(abs(turnError))) # Returning turnign error
+
+    brain.screen.set_cursor(3,1) # Setting cursor at location 3, 1
+    brain.screen.print("Derivative: " + str(abs(derivative))) # Returning the derivative
+
+def pointTurn(setPoint):
+    """
+    1. Perform a point turn using the inertial sensor heading and proportional derivative control
+    2. Argument: Desired heading (setPoint) in degrees
+    """
+
+    brain.screen.clear_screen() # Clear the screen
+
+    # Set stopping mode for the left and right motors
+    leftMotor.set_stopping(BRAKE)
+    rightMotor.set_stopping(BRAKE)
+
+    # Calculate the difference between the setPoint and the current heading
+    # to determine the turning direction
+
+    difference = setPoint - inertial_1.heading()
+
+    # Want to turn the smallest amount to reach the desired heading (not the reflex angle)
+    if (setPoint > inertial_1.heading()):   # Setpoint
+        if (abs(difference) <= 180):
+            clockwise = True # Turn CW
+        else:
+            clockwise = False # Turn CCW
+        
+    else:
+        if (abs(difference) <= 180):
+            clockwise = False # Turn CCW
+        else:
+            clockwise = True # Turn CW
+    
+    # Define the kP and kD for CW and CCW turns
+    if (clockwise):     # Values for a CW turn
+        kP = 0.04
+        kD = 0.00
+    else:               # Values for a CCW turn
+        kP = 0.04       
+        kD = 0.00
+    
+    # Define maximum turning velocity and previous error term
+    maxVelocity = 50    # Maximum turning velocity
+    previousError = 0.0 # Error from the previous loop iteration
+
+    while(True):
+        turnError = setPoint - inertial_1.heading() # Calculate error
+        derivative = turnError - previousError      # Current error - previous error
+
+        # Break out of the loop and stop turning when the setpoint is reached without oscillation
+        if((abs(turnError) < 1) and (abs(derivative) < 0.2)):
+           stopMotors()     # Stop motors
+           break            # Exit the while loop 
+
+        # Calculate the correction for the motor velocities
+        turnCorrection = (kP * turnError) + (kD * derivative)
+
+        # Limit the turnCorrection to be between -1 and 1
+        # This will keep the motor velocity <= maximum turn velocity
+        if(abs(turnCorrection) > 1):
+            turnCorrection = 1
+        
+        turnVelocity = maxVelocity * turnCorrection
+
+        # Set the motor velocities based on the direction (CW or CCW)
+        if (clockwise): # Turn clockwise
+            leftMotor.set_velocity(turnVelocity)
+            rightMotor.set_velocity(-1 * turnVelocity)
+        else: # Turn counterclockwise
+            leftMotor.set_velocity(-1 * turnVelocity)
+            rightMotor.set_velocity(turnVelocity)
+        
+        # Spin the motors
+        leftMotor.spin(FORWARD)
+        rightMotor.spin(FORWARD)
+
+        turnData(turnError, derivative) # Print heading, error, and derivative
+
+        previousError = turnError # Update previous error time
+        wait(20, MSEC) # Setting general wait time
+
+
 #-----------------------------------------------------------------------------
 
 
@@ -185,12 +279,16 @@ def main():
     """
 
     bump()                          # Call the bump() function to begin program execution
-    leftMotor.set_stopping(BRAKE)   # This mode will help reduce the "lurch" effect
-    rightMotor.set_stopping(BRAKE) 
     inertialCalibration()           # Calibrate the inertial sensor
 
-    driveStraight(87, 0, 50)        # Call driveStraight with the necessary distance
-    wait(2, SECONDS)
-    driveStraight(87, 0, -50)
+    pointTurn(224) 
+    
+    # the following lines have been commented out until the kP value is assessed 
+    # and everything has been certified
+
+    # wait(2, SECONDS)
+    # pointTurn(37)
+    # wait(2, SECONDS)
+    # pointTurn(135)
 #-----------------------------------------------------------------------------
 main()
