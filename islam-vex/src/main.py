@@ -17,6 +17,7 @@ brain=Brain()
 
 rightMotor = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)  # the right drive train motor
 leftMotor = Motor(Ports.PORT2, GearSetting.RATIO_18_1, True)    # the left drive train motor
+driveTrain = DriveTrain(leftMotor, rightMotor)                  # run both motors simultaneously
 liftMotor = Motor(Ports.PORT3, GearSetting.RATIO_18_1, False)   # the lift motor
 inertial_1 = Inertial(Ports.PORT5)                              # setting inertial sensor
 liftArmRotation = Rotation(Ports.PORT6, False)                  # LiftArmRotation sensor
@@ -98,8 +99,7 @@ def stopMotors():
     Stop both motors at the same time
     """
 
-    rightMotor.stop()
-    leftMotor.stop()
+    driveTrain.stop()
     wait(0.5, SECONDS) # Letting the robot system stabilize with a 0.5 second wait
 
 def driveStraight(distance, setpoint, motorVelocity):
@@ -150,8 +150,7 @@ def driveStraight(distance, setpoint, motorVelocity):
 
 
             # Spin the motors
-            leftMotor.spin(FORWARD)
-            rightMotor.spin(FORWARD)
+            driveTrain.drive(FORWARD)
 
             driveStraightData(error) # Display position, rotation, and error
 
@@ -173,8 +172,7 @@ def driveStraight(distance, setpoint, motorVelocity):
 
 
             # Spin the motors
-            leftMotor.spin(FORWARD)
-            rightMotor.spin(FORWARD)
+            driveTrain.drive(FORWARD)
 
             driveStraightData(error) # Display position, rotation, and error
 
@@ -222,11 +220,11 @@ def pointTurn(setPoint):
     
     # Define the kP and kD for CW and CCW turns
     if (clockwise):     # Values for a CW turn
-        kP = 0.04
-        kD = 0.00
+        kP = 0.097      # 0.096 looks nice
+        kD = 0.001      # 0.001
     else:               # Values for a CCW turn
-        kP = 0.04       
-        kD = 0.00
+        kP = 0.095      # 0.099 looks nice
+        kD = 0.002     # 0.001
     
     # Define maximum turning velocity and previous error term
     maxVelocity = 50    # Maximum turning velocity
@@ -268,6 +266,18 @@ def pointTurn(setPoint):
         previousError = turnError # Update previous error time
         wait(20, MSEC) # Setting general wait time
 
+def liftArm(motorVelocity, liftAngle):
+    # Configure the motor to hold its position once we life the object up, so the robot doesn't drop it
+    liftMotor.set_stopping(HOLD)
+
+    liftMotor.set_velocity(motorVelocity, PERCENT)
+
+    gearRatio = 5 # 60T to 12T
+    motorAngularDisplacement = liftAngle * gearRatio # Calculate the motor axle's angular displacement
+
+    # Spin the motor forward for the given angular displacement
+    liftMotor.spin_for(FORWARD, motorAngularDisplacement, DEGREES)
+    wait(0.5, SECONDS) # Letting the system stabilize
 
 #-----------------------------------------------------------------------------
 
@@ -282,13 +292,12 @@ def main():
     inertialCalibration()           # Calibrate the inertial sensor
 
     pointTurn(224) 
-    
-    # the following lines have been commented out until the kP value is assessed 
-    # and everything has been certified
+    wait(2, SECONDS)
+    pointTurn(37)
+    wait(2, SECONDS)
+    pointTurn(135)
 
-    # wait(2, SECONDS)
-    # pointTurn(37)
-    # wait(2, SECONDS)
-    # pointTurn(135)
+    # Below is sample code to test the lift arm. uncomment it once the pointTurn assessment is complete
+    # liftArm(20, 45)
 #-----------------------------------------------------------------------------
 main()
