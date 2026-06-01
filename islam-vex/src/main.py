@@ -291,13 +291,9 @@ def main():
     bump()                          # Call the bump() function to begin program execution
     inertialCalibration()           # Calibrate the inertial sensor
 
-    pointTurn(224) 
-    wait(2, SECONDS)
-    pointTurn(37)
-    wait(2, SECONDS)
-    pointTurn(135)
-
-    # Below is sample code to test the lift arm. uncomment it once the pointTurn assessment is complete
-    # liftArm(20, 45)
+    liftArm(20, -30)
+    driveStraight(79, 0, 50)
+    liftArm(15, 45)
+    driveStraight(30, 0, -50)
 #-----------------------------------------------------------------------------
 main()
