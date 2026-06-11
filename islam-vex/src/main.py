@@ -291,9 +291,8 @@ def main():
     bump()                          # Call the bump() function to begin program execution
     inertialCalibration()           # Calibrate the inertial sensor
 
-    liftArm(20, -30)
-    driveStraight(79, 0, 50)
-    liftArm(15, 45)
-    driveStraight(30, 0, -50)
+    driveStraight(2, 0, 50)
+    liftArm(20, 13)
+    # liftArm(20, 64)
 #-----------------------------------------------------------------------------
 main()
